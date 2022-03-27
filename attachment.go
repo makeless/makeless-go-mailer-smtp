@@ -1,4 +1,4 @@
-package makeless_go_mailer_basic
+package makeless_go_mailer_smtp
 
 import (
 	"net/textproto"
