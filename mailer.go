@@ -6,15 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/jordan-wright/email"
-	"github.com/makeless/makeless-go/mailer"
-	"github.com/makeless/makeless-go/queue"
-	"github.com/makeless/makeless-go/queue/basic"
+	"github.com/makeless/makeless-go/v2/mail"
+	"github.com/makeless/makeless-go/v2/queue"
+	"github.com/makeless/makeless-go/v2/queue/basic"
 	"net/smtp"
 	"sync"
 )
 
 type Mailer struct {
-	Handlers map[string]func(data map[string]interface{}, locale string) (makeless_go_mailer.Mail, error)
 	Queue    makeless_go_queue.Queue
 	Auth     smtp.Auth
 	Tls      *tls.Config
@@ -24,43 +23,6 @@ type Mailer struct {
 	Username string
 	Password string
 	*sync.RWMutex
-}
-
-func (mailer *Mailer) GetHandlers() map[string]func(data map[string]interface{}, locale string) (makeless_go_mailer.Mail, error) {
-	mailer.RLock()
-	defer mailer.RUnlock()
-
-	return mailer.Handlers
-}
-
-func (mailer *Mailer) GetHandler(name string) (func(data map[string]interface{}, locale string) (makeless_go_mailer.Mail, error), error) {
-	mailer.RLock()
-	defer mailer.RUnlock()
-
-	handler, exists := mailer.Handlers[name]
-
-	if !exists {
-		return nil, makeless_go_mailer.MailNotExistsErr
-	}
-
-	return handler, nil
-}
-
-func (mailer *Mailer) SetHandler(name string, handler func(data map[string]interface{}, locale string) (makeless_go_mailer.Mail, error)) {
-	mailer.Lock()
-	defer mailer.Unlock()
-
-	mailer.Handlers[name] = handler
-}
-
-func (mailer *Mailer) GetMail(name string, data map[string]interface{}, locale string) (makeless_go_mailer.Mail, error) {
-	handler, err := mailer.GetHandler(name)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return handler(data, locale)
 }
 
 func (mailer *Mailer) GetQueue() makeless_go_queue.Queue {
@@ -137,7 +99,7 @@ func (mailer *Mailer) Init() error {
 	return nil
 }
 
-func (mailer *Mailer) Send(ctx context.Context, mail makeless_go_mailer.Mail) error {
+func (mailer *Mailer) Send(ctx context.Context, mail makeless_go_mail.Mail) error {
 	var e = &email.Email{
 		To:          mail.GetTo(),
 		Cc:          mail.GetCc(),
@@ -166,7 +128,7 @@ func (mailer *Mailer) Send(ctx context.Context, mail makeless_go_mailer.Mail) er
 	return e.SendWithTLS(fmt.Sprintf("%s:%s", mailer.GetHost(), mailer.GetPort()), mailer.GetAuth(), mailer.GetTls())
 }
 
-func (mailer *Mailer) SendQueue(mail makeless_go_mailer.Mail) error {
+func (mailer *Mailer) SendQueue(mail makeless_go_mail.Mail) error {
 	bytes, err := json.Marshal(mail)
 
 	if err != nil {
